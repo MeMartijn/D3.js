@@ -9,21 +9,52 @@
 
     <script src="https://d3js.org/d3.v4.min.js"></script>
     <script>
-        // Variable declaration
+        // Custom variable declaration
         const csv_file = "../datasets/House_Price_Index_Dwellings.csv",
-            margin = {top: 20, right: 20, bottom: 100, left: 60},
+            margin = {top: 100, right: 100, bottom: 100, left: 100},
             width = 800 - margin.left - margin.right,
-            height = 500 - margin.top - margin.bottom;
+            height = 500 - margin.top - margin.bottom,
+            donutWidth = 40,
+            color = d3.scaleOrdinal(d3.schemeCategory10);
+
+        // Donut specific variables
+        const radius = Math.min(width, height) / 2;
+        const arc = d3.arc()
+            .innerRadius(radius - donutWidth)
+            .outerRadius(radius);
+        const pie = d3.pie()
+            .value(function(d){ return d.count; })
+            .sort(null);
 
         // Create svg element
         const svg = d3.select("body").append("svg")
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+            .attr("transform", "translate(" + margin.left + "%," + margin.top + "%)")
             .style("padding", "60px")
             .append("g")
             .attr("transform",
                 "translate(" + margin.left + "," + margin.top + ")");
+
+        d3.csv(csv_file, function(error, data) {
+            // Check if an error occured while loading the data
+            if (error) throw error;
+
+            data.forEach(function (d) {
+                d.type = d["HouseType"];
+                d.count = +d["Number"];
+            });
+
+            svg.selectAll(".slice")
+                .data(pie(data))
+                .enter()
+                .append("path")
+                .attr("d", arc)
+                .attr("fill", function(d) {
+                    return color(d.index);
+                });
+        });
     </script>
+    <i>Note: this is written in <a href="http://es6-features.org/ES6">ES6</a>, the newest version of JavaScript. Depending on the browser, performance may differ.</i>
 </body>
 </html>
