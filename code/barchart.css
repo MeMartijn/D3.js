@@ -33,3 +33,7 @@ text.label {
 .reverse {
   opacity: 0.2;
 }
+
+i {
+  display: block;
+}
