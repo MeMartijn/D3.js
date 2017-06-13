@@ -14,7 +14,8 @@
 <script>
 
  // Define the size of the visualisation
-var margin = {top: 20, right: 20, bottom: 100, left: 60},
+const margin = {top: 20, right: 20, bottom: 100, left: 60},
+    rectmargin = 3,
     width = 800 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
 
@@ -23,21 +24,21 @@ var margin = {top: 20, right: 20, bottom: 100, left: 60},
 // Discrete output values are automatically computed
 // by the scale by dividing the continuous range into uniform bands.
 // Band scales are typically used for bar charts with an ordinal or categorical dimension.
-var x = d3.scaleBand()
+const x = d3.scaleBand()
           .range([0, width])
           .padding(0.1);
 
 // Scaling on y-axis is 'linear'
-var y = d3.scaleLinear()
+const y = d3.scaleLinear()
           .range([height, 0]);
 
 // Set color scheme. Check https://github.com/d3/d3-scale#schemeCategory10
 // for color schemes.          
-var c10 = d3.scaleOrdinal(d3.schemeCategory10);
+const c10 = d3.scaleOrdinal(d3.schemeCategory10);
 
 // Append the svg object to the body of the page. Then append
 // a 'group' element to 'svg', moves the 'group' element to the top left margin.
-var svg = d3.select("body").append("svg")
+const svg = d3.select("body").append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
@@ -48,80 +49,168 @@ var svg = d3.select("body").append("svg")
 
 // Here we define the path to the .csv file we are going to load.
 // Note that this assumes that the dataset file is in the datasets directory
-var csv_file = "../datasets/marriage.csv";
+const csv_file = "../datasets/marriage.csv";
 d3.csv(csv_file, function(error, data) {
 
-  // Check if an error occured while loading the data
-  if (error) throw error;
+    // Check if an error occured while loading the data
+    if (error) throw error;
+    // Data formatting. Here we select the columns from the CSV file that we are
+    // going to use. For our simple bar chart we only use the 'year' and 'all' columns.
 
-  // Data formatting. Here we select the columns from the CSV file that we are
-  // going to use. For our simple bar chart we only use the 'year' and 'all' columns.
-  data.forEach(function(d) {
-    d.year   =  d["year"] // read as string
-    d.all  = +d["all"] * 100    // the plus (+) indicates converting to a number
-  });
+    data.forEach(function(d) {
+        d.year   =  d["year"]; // read as string
+        d.poor  = +d["poor"] * 100;    // the plus (+) indicates converting to a number
+        d.mid  = +d["mid"] * 100;
+        d.rich  = +d["rich"] * 100
+    });
 
-  // Scale the range of the data in the domains
-  x.domain(data.map(function(d) { return d.year; }));
-  y.domain([0, d3.max(data, function(d) { return d.all; })]);
+    // Scale the range of the data in the domains
+    x.domain(data.map(function(d) { return d.year; }));
+    y.domain([0, d3.max(data, function(d) { return d.poor; })]);
 
-  // Append the rectangles for the bar chart
-  svg.selectAll(".bar")
-      .data(data)
-    .enter().append("rect")
-      .attr("class", "bar")
-      .attr("x", function(d) { return x(d.year); })
-      .attr("width", x.bandwidth())
-      .attr("y", function(d) { return y(d.all); })
-      .attr("height", function(d) { return height - y(d.all); })
-      .attr("fill", c10(0));
+    // Append the rectangles for the bar chart
+    const rects = svg.selectAll(".bar").data(data).enter();
 
-  // Add text inside the bars to display the percentage of never married people
-  svg.selectAll("text")
-      .data(data)
-    .enter().append("text")
-      .attr("class", "label")
-      .attr("x", function(d) { return x(d.year) + 5; })
-      .attr("y", function(d) { return y(d.all) + 10; })
-      .attr("dy", ".5em")
-      .text(function(d) { return d3.format(".2f")(d.all); });
+    rects.append("rect")
+        .attr("class", "bar")
+        .attr("x", function(d) { return x(d.year); })
+        .attr("width", x.bandwidth() / 3 - rectmargin)
+        .attr("y", function(d) { return y(d.poor); })
+        .attr("height", function(d) { return height - y(d.poor); })
+        .attr("fill", c10(0));
 
-  // Show the x-axis
-  svg.append("g")
-      .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(x));
+    rects.append("rect")
+        .attr("class", "bar")
+        .attr("x", function(d) { return x(d.year) + x.bandwidth() / 3; })
+        .attr("width", x.bandwidth() / 3 - rectmargin)
+        .attr("y", function(d) { return y(d.mid); })
+        .attr("height", function(d) { return height - y(d.mid); })
+        .attr("fill", c10(1));
 
-  // Show the y-axis
-  svg.append("g")
-      .call(d3.axisLeft(y)
-        .ticks(10)
-        .tickFormat(d3.format(".2f")));
+    rects.append("rect")
+        .attr("class", "bar")
+        .attr("x", function(d) { return x(d.year) + 2*(x.bandwidth() / 3); })
+        .attr("width", x.bandwidth() / 3 - rectmargin)
+        .attr("y", function(d) { return y(d.rich); })
+        .attr("height", function(d) { return height - y(d.rich); })
+        .attr("fill", c10(2));
 
-  // Add axis labels to the chart (Note: these are not built-in to D3)
-  // Label x-axis
-  svg.append("text")
-    .attr("x", width / 2.0)
-    .attr("y", height + 50)
-    .style("font-weight", "bold")
-    .style("font-size", "14px")
-    .text("Year");
+    // Show the x-axis
+    svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x));
 
-  // Label y-axis
-  svg.append("text")
-    .attr("y", -50)
-    .attr("x", -height / 2.0 - 100)
-    .attr("transform", "rotate(-90)")
-    .style("font-weight", "bold")
-    .style("font-size", "14px")
-    .text("Percentage of never married")
+    // Show the y-axis
+    svg.append("g")
+        .call(d3.axisLeft(y)
+            .ticks(10)
+            .tickFormat(d3.format(".2f")));
 
-  // Add a title to the chart (Note: these are not built-in to D3)
-  svg.append("text")
-    .attr("x", (width / 2.0 - 250))
-    .attr("y", -20)
-    .style("font-weight", "bold")
-    .style("font-size", "22px")
-    .text("Percentage of never married in the USA (age 25-34)");
-});
+    // Add axis labels to the chart (Note: these are not built-in to D3)
+    // Label x-axis
+    svg.append("text")
+        .attr("x", width / 2.0)
+        .attr("y", height + 50)
+        .style("font-weight", "bold")
+        .style("font-size", "14px")
+        .text("Year");
+
+    // Label y-axis
+    svg.append("text")
+        .attr("y", -50)
+        .attr("x", -height / 2.0 - 100)
+        .attr("transform", "rotate(-90)")
+        .style("font-weight", "bold")
+        .style("font-size", "14px")
+        .text("Percentage of never married");
+
+    // Add a title to the chart (Note: these are not built-in to D3)
+    svg.append("text")
+        .attr("x", (width / 2.0 - 250))
+        .attr("y", -20)
+        .style("font-weight", "bold")
+        .style("font-size", "22px")
+        .text("Percentage of never married in the USA (age 25-34)");
+
+    // Add a legend
+    const legendmargin = 25,
+        colormargin = 2,
+        textmargin = legendmargin / 2 + 6;
+    const legend = svg.append("g")
+        .attr("class","legend")
+        .attr("transform","translate(10,0)")
+        .style("font-size","10px");
+
+    legend.append("text")
+        .text("rich")
+        .attr("x", 0)
+        .attr("y", textmargin - 2);
+    legend.append("text")
+        .text("mid")
+        .attr("x", 0)
+        .attr("y", textmargin + legendmargin);
+    legend.append("text")
+        .text("poor")
+        .attr("x", 0)
+        .attr("y", textmargin + legendmargin * 2);
+
+    legend.append("rect")
+        .attr("x", legendmargin)
+        .attr("y", 0)
+        .attr("class","category")
+        .attr("width", legendmargin)
+        .attr("height", legendmargin)
+        .attr("fill", c10(2));
+    legend.append("rect")
+        .attr("x", legendmargin)
+        .attr("y", legendmargin + colormargin)
+        .attr("class","category")
+        .attr("width", legendmargin)
+        .attr("height", legendmargin)
+        .attr("fill", c10(1));
+    legend.append("rect")
+        .attr("x", legendmargin)
+        .attr("y", legendmargin * 2 + colormargin * 2)
+        .attr("class","category")
+        .attr("width", legendmargin)
+        .attr("height", legendmargin)
+        .attr("fill", c10(0));
+    });
+
+
+
+</script>
+<script>
+    alert("Click on the legend colors to highlight the barchart");
+
+    // Add interactivity to the barchart
+    setTimeout(function(){
+        const legendColors = document.querySelectorAll(".legend rect");
+        const bars = document.querySelectorAll(".bar");
+        function toggleDisplay(el){
+            // Reset styles
+            legendColors.forEach(function(legendcolor){
+                legendcolor.classList.remove("highlight");
+            });
+            bars.forEach(function(bar){
+                bar.classList.remove("highlight");
+                bar.classList.remove("reverse");
+            });
+
+            // Add highlights
+            this.classList.add("highlight");
+            const color = d3.select(this).attr("fill");
+            bars.forEach(function(bar){
+                if (d3.select(bar).attr("fill") === color) {
+                    bar.classList.add("highlight");
+                } else {
+                    bar.classList.add("reverse");
+                }
+            })
+        }
+        legendColors.forEach(function(color) {
+            color.addEventListener("click", toggleDisplay);
+        });
+    }, 10);  // Set timeout of 10ms to get the svg ready and loaded
 
 </script>

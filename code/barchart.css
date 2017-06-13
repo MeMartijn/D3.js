@@ -1,10 +1,13 @@
+* {
+  transition: all 0.2s ease-in-out;
+}
 body {
   font: 10px sans-serif;
   padding: 40px 60px;
 }
 
-rect.bar {
-  opacity: 0.7
+.bar {
+  opacity: 0.7;
 }
 
 rect.bar:hover {
@@ -14,4 +17,19 @@ rect.bar:hover {
 text.label {
   fill: #FFFFFF;
   font: 10px sans-serif;
+}
+
+.category {
+  opacity: 0.7;
+}
+.category:hover {
+  opacity: 1;
+}
+
+.highlight {
+  opacity: 1;
+}
+
+.reverse {
+  opacity: 0.2;
 }
