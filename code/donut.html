@@ -12,49 +12,145 @@
         // Custom variable declaration
         const csv_file = "../datasets/House_Price_Index_Dwellings.csv",
             margin = {top: 100, right: 100, bottom: 100, left: 100},
-            width = 800 - margin.left - margin.right,
-            height = 500 - margin.top - margin.bottom,
-            donutWidth = 40,
-            color = d3.scaleOrdinal(d3.schemeCategory10);
+            width = 400,
+            height = 275,
+            donutWidth = 35,
+            color = d3.scaleOrdinal(d3.schemeCategory10),
+            cornerradius = 4,
+            legendmargin = 20,
+            colormargin = 30,
+            legendSize = 20,
+            colorsize = 18;
 
         // Donut specific variables
         const radius = Math.min(width, height) / 2;
         const arc = d3.arc()
             .innerRadius(radius - donutWidth)
-            .outerRadius(radius);
+            .outerRadius(radius)
+            .cornerRadius(cornerradius);
         const pie = d3.pie()
             .value(function(d){ return d.count; })
-            .sort(null);
+            .sort(null)
+            .padAngle(.02);
+        const label = function(d){return d.data.label};
+
+        // Functions for displaying data
+        function getName(obj){
+            return obj.data.HouseType;
+        }
+        function getPercentage(obj, all) {
+            return (obj.data.count / all * 100).toFixed(2);
+        }
 
         // Create svg element
         const svg = d3.select("body").append("svg")
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
-            .attr("transform", "translate(" + margin.left + "%," + margin.top + "%)")
+            //.attr("transform", "translate(" + margin.left + "%," + margin.top + "%)")
             .style("padding", "60px")
             .append("g")
-            .attr("transform",
-                "translate(" + margin.left + "," + margin.top + ")");
+            .attr("transform", `translate(${width/2},${height/2+radius/2})`);
 
         d3.csv(csv_file, function(error, data) {
             // Check if an error occured while loading the data
             if (error) throw error;
 
+            let total = 0;
             data.forEach(function (d) {
                 d.type = d["HouseType"];
                 d.count = +d["Number"];
+                total += d.count;
             });
 
-            svg.selectAll(".slice")
+            const slice = svg.selectAll(".slice")
                 .data(pie(data))
-                .enter()
-                .append("path")
+                .enter();
+
+            slice.append("path")
                 .attr("d", arc)
                 .attr("fill", function(d) {
                     return color(d.index);
                 });
+
+            let textIndex = 0;
+            const text = svg.selectAll("text")
+                .data(pie(data), label)
+                .enter();
+
+            text.append("text")
+                .attr("dy", "0.35em")
+                .attr("x", radius + legendmargin + colormargin)
+                .attr("y", -radius + 10)
+                .text(function(d) {
+                    textIndex += d.index;
+                    return getName(d) + ": " + getPercentage(d, total) + "%";
+                })
+                .attr("transform", function(d){
+                    return `translate(0,${d.index*legendSize})`
+                });
+
+            text.append("rect")
+                .attr("width", colorsize)
+                .attr("height", colorsize)
+                .attr("x", radius + legendmargin)
+                .attr("y", -radius)
+                .attr("fill", function(d){
+                    return color(d.index);
+                })
+                .attr("transform", function(d){
+                    return `translate(0,${d.index*legendSize})`
+                })
+                .attr("rx", cornerradius)
+                .attr("ry", cornerradius);
+
+            svg.append("text")
+                .attr("x", -(width/2)+margin.left)
+                .attr("y", -radius - margin.top/2)
+                .style("font-weight", "bold")
+                .style("font-size", "22px")
+                .text("Sold dwellings in the Netherlands (2016)");
+            svg.append("text")
+                .attr("x", radius + legendmargin)
+                .attr("y", -radius - 10)
+                .style("font-size", "12px")
+                .text(`Total dwellings sold: ${total}`);
         });
     </script>
     <i>Note: this is written in <a href="http://es6-features.org/ES6">ES6</a>, the newest version of JavaScript. Depending on the browser, performance may differ.</i>
+    <script>
+        alert("Click on the legend colors to highlight the donut");
+
+        // Add interactivity to the barchart
+        setTimeout(function(){
+            const legendColors = document.querySelectorAll("rect"),
+                arcs = document.querySelectorAll("g path");
+
+            function toggleDisplay(el){
+                // Reset styles
+                legendColors.forEach(function(legendcolor){
+                    legendcolor.classList.remove("highlight");
+                });
+                arcs.forEach(function(arc){
+                    arc.classList.remove("highlight");
+                    arc.classList.remove("reverse");
+                });
+
+                // Add highlights
+                this.classList.add("highlight");
+                const color = d3.select(this).attr("fill");
+                arcs.forEach(function(arc){
+                    if (d3.select(arc).attr("fill") === color) {
+                        arc.classList.add("highlight");
+                    } else {
+                        arc.classList.add("reverse");
+                    }
+                });
+            }
+            legendColors.forEach(function(color) {
+                color.addEventListener("click", toggleDisplay);
+            });
+        }, 100);  // Set timeout of 10ms to get the svg ready and loaded
+
+    </script>
 </body>
 </html>

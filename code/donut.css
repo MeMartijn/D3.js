@@ -1,3 +1,13 @@
+* {
+    transition: all 0.2s ease-in-out;
+}
+
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
 path {
     border-radius: 20px;
 }
@@ -6,3 +16,20 @@ i {
     display: block;
     font-size: 11px;
 }
+
+text {
+    font-family: sans-serif;
+}
+
+path, rect {
+    opacity: 0.7;
+}
+
+.highlight {
+    opacity: 1;
+}
+
+.reverse {
+    opacity: 0.2;
+}
+
